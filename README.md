@@ -1,5 +1,13 @@
 # ElBruno.MAF.FoundryLocal
 
+[![NuGet](https://img.shields.io/nuget/v/ElBruno.MAF.FoundryLocal.Adapter.svg?style=flat-square&logo=nuget)](https://www.nuget.org/packages/ElBruno.MAF.FoundryLocal.Adapter)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ElBruno.MAF.FoundryLocal.Adapter.svg?style=flat-square&logo=nuget)](https://www.nuget.org/packages/ElBruno.MAF.FoundryLocal.Adapter)
+[![Publish Status](https://github.com/elbruno/ElBruno.MAF.FoundryLocal/actions/workflows/publish.yml/badge.svg)](https://github.com/elbruno/ElBruno.MAF.FoundryLocal/actions/workflows/publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
+[![GitHub stars](https://img.shields.io/github/stars/elbruno/ElBruno.MAF.FoundryLocal?style=social)](https://github.com/elbruno/ElBruno.MAF.FoundryLocal)
+[![Twitter Follow](https://img.shields.io/twitter/follow/elbruno?style=social)](https://twitter.com/elbruno)
+
 This repository demonstrates a local-first AI agent in C# using:
 
 - .NET 10
