@@ -77,13 +77,19 @@ Console.WriteLine(response.Text);
 
 ## Quick start: use the same wrapper with Microsoft Agent Framework
 
+This is the key benefit of this library: once Foundry Local is exposed as `IChatClient`,
+you can pass that same `IChatClient` to Agent Framework and use local inference through
+standard agent APIs.
+
 ```csharp
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
 // Reuse the IChatClient instance created in the previous snippet.
+// No Foundry Local-specific types are needed here.
 var agent = new ChatClientAgent(
     chatClient: chatClient,
+    // Agent Framework sends these instructions through the same IChatClient pipeline.
     instructions: "You are a concise local assistant.",
     name: "LocalFoundryAgent",
     description: "Foundry Local + MEAI adapter",
@@ -96,6 +102,7 @@ var agentResponse = await agent.RunAsync(
     session: null,
     options: null);
 
+// The call above is routed to Foundry Local through ElBruno.MAF.FoundryLocal adapter.
 Console.WriteLine(agentResponse);
 ```
 
