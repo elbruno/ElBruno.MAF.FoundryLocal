@@ -162,7 +162,7 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
 
         var config = new Configuration
         {
-            AppName = "ElBruno.MAF.FoundryLocal"
+            AppName = "ElBruno_MAF_FoundryLocal"
         };
 
         await FoundryLocalManager.CreateAsync(
