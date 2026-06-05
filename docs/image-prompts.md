@@ -28,8 +28,10 @@ t2i "Wide hero image for README of a .NET 10 console project integrating Microso
 
 ## Current status
 
-Generation is currently blocked because `t2i` has no configured provider credentials in this environment (missing endpoint/model/api key).  
-Once configured, re-run the commands above to produce:
+`t2i` generation is currently blocked in this environment because provider credentials are missing.  
+As a temporary fallback, repository images were generated locally and committed so the repo and NuGet package have visuals:
 
 - `docs\images\repo-icon.png`
 - `docs\images\readme-main.png`
+
+When `t2i` is configured, re-run the commands above to replace these fallback images with AI-generated assets.

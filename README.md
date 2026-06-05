@@ -15,6 +15,8 @@ This repository demonstrates a local-first AI agent in C# using:
 - Microsoft.Extensions.AI (`IChatClient`)
 - Foundry Local SDK (in-process, no REST server)
 
+![Foundry Local to IChatClient to Agent Framework](docs/images/readme-main.png)
+
 ## Repository assets and documentation rules
 
 - Documentation location rule: all docs live under `docs\`, except `README.md` and `LICENSE` at root.

@@ -7,11 +7,12 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageId>ElBruno.MAF.FoundryLocal.Adapter</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>El Bruno</Authors>
     <Description>Adapter package that bridges Foundry Local SDK with Microsoft.Extensions.AI IChatClient for Agent Framework usage.</Description>
     <PackageTags>foundry-local;agent-framework;microsoft-extensions-ai;chatclient;adapter</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>repo-icon.png</PackageIcon>
     <PackageReadmeFile>README.Package.md</PackageReadmeFile>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/elbruno/ElBruno.MAF.FoundryLocal</RepositoryUrl>
@@ -21,6 +22,7 @@
 
   <ItemGroup>
     <None Include="README.Package.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\docs\images\repo-icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
