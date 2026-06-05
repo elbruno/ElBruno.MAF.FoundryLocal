@@ -1,5 +1,4 @@
 using aspireSample.Web.Components;
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
