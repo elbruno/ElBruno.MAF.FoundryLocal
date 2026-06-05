@@ -34,6 +34,7 @@ public static class Extensions
                 // Local-first LLM calls can take longer during first model download/load.
                 options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(2);
                 options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(5);
             });
 
             // Turn on service discovery by default
