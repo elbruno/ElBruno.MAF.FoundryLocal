@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageId>ElBruno.MAF.FoundryLocal.Adapter</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
     <Authors>El Bruno</Authors>
     <Description>Adapter package that bridges Foundry Local SDK with Microsoft.Extensions.AI IChatClient for Agent Framework usage.</Description>
     <PackageTags>foundry-local;agent-framework;microsoft-extensions-ai;chatclient;adapter</PackageTags>
