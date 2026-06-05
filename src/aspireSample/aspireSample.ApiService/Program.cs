@@ -1,9 +1,11 @@
 using ElBruno.MAF.FoundryLocal;
+using System.Diagnostics;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+var genAiActivitySource = new ActivitySource(builder.Environment.ApplicationName);
 
 builder.AddServiceDefaults();
 builder.Services.AddOpenApi();
@@ -83,10 +85,18 @@ app.MapPost("/chat", async (
         MaxOutputTokens = chatRuntimeOptions.Value.MaxOutputTokens
     };
 
+    using var activity = genAiActivitySource.StartActivity("gen_ai.chat.meai", ActivityKind.Internal);
+    activity?.SetTag("gen_ai.system", "foundry_local");
+    activity?.SetTag("gen_ai.operation.name", "chat");
+    activity?.SetTag("gen_ai.request.model", foundryOptions.Value.ModelAlias);
+    activity?.SetTag("chat.backend", "meai");
+
     var response = await chatClient.GetResponseAsync(
         [new ChatMessage(ChatRole.User, request.Prompt)],
         chatOptions,
         cancellationToken);
+    activity?.SetTag("gen_ai.response.model", foundryOptions.Value.ModelAlias);
+    activity?.SetTag("gen_ai.response.finish_reasons", "stop");
 
     return Results.Ok(new ChatResponsePayload(
         Backend: "meai",
@@ -106,8 +116,16 @@ app.MapPost("/chat-agent", async (
         return Results.BadRequest(new { error = "Prompt is required." });
     }
 
+    using var activity = genAiActivitySource.StartActivity("gen_ai.chat.agent", ActivityKind.Internal);
+    activity?.SetTag("gen_ai.system", "foundry_local");
+    activity?.SetTag("gen_ai.operation.name", "chat");
+    activity?.SetTag("gen_ai.request.model", foundryOptions.Value.ModelAlias);
+    activity?.SetTag("chat.backend", "agent-framework");
+
     var agentResponse = await agent.RunAsync(request.Prompt, session: null, options: null, cancellationToken: cancellationToken);
     var responseText = TryGetProperty(agentResponse, "Text") ?? string.Empty;
+    activity?.SetTag("gen_ai.response.model", foundryOptions.Value.ModelAlias);
+    activity?.SetTag("gen_ai.response.finish_reasons", "stop");
 
     return Results.Ok(new ChatResponsePayload(
         Backend: "agent-framework",
