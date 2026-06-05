@@ -47,6 +47,7 @@ using Microsoft.Extensions.Options;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// ElBruno.MAF.FoundryLocal options for model lifecycle (alias, auto-download, unload behavior).
 builder.Services.Configure<FoundryLocalOptions>(o =>
 {
     o.ModelAlias = "qwen2.5-0.5b";
@@ -54,10 +55,16 @@ builder.Services.Configure<FoundryLocalOptions>(o =>
     o.UnloadOnExit = true;
 });
 builder.Services.Configure<ChatRuntimeOptions>(_ => { });
+
+// ElBruno.MAF.FoundryLocal service that handles Foundry Local manager/model/chat client lifecycle.
 builder.Services.AddSingleton<FoundryLocalModelLifecycleService>();
+
+// Core value of this library:
+// register FoundryLocalChatClientAdapter so Foundry Local is exposed as MEAI IChatClient.
 builder.Services.AddSingleton<IChatClient, FoundryLocalChatClientAdapter>();
 
 using var host = builder.Build();
+// From here on you code against standard IChatClient, not Foundry Local-specific SDK calls.
 var chatClient = host.Services.GetRequiredService<IChatClient>();
 
 var response = await chatClient.GetResponseAsync(
