@@ -5,6 +5,7 @@ This sample follows the current Aspire app model from [aspire.dev](https://aspir
 - API backend (`aspireSample.ApiService`) that uses:
   - `FoundryLocalModelLifecycleService`
   - `FoundryLocalChatClientAdapter` as `IChatClient`
+  - MEAI OpenTelemetry instrumentation (`UseOpenTelemetry`) for GenAI traces
 - Blazor web app (`aspireSample.Web`) with a simple chat UI
 - Aspire AppHost orchestration for both projects (web -> api)
 
@@ -15,23 +16,35 @@ cd C:\src\ElBruno.MAF.FoundryLocal\src\aspireSample
 dotnet run --project .\aspireSample.AppHost\aspireSample.AppHost.csproj
 ```
 
-When it starts, open the Aspire Dashboard URL shown in the console and use the login URL/token emitted by AppHost. Open the **web** resource, enter a prompt, and send it.
+When it starts, open the Aspire Dashboard URL shown in the console and use the login URL/token emitted by AppHost. Open the **web** resource, enter a prompt, then click either **Send with MEAI** or **Send with Agent**.
 
 ## Endpoints
 
 - `GET /models`  
   Lists model aliases from Foundry Local catalog.
-- `POST /chat` with JSON body:
+- `POST /chat` (direct MEAI + FoundryLocal adapter) with JSON body:
 
 ```json
 { "prompt": "Explain local AI agents in one short paragraph." }
 ```
 
-Returns the model alias and LLM response generated through `ElBruno.MAF.FoundryLocal`.
+- `POST /chat-agent` (Agent Framework `ChatClientAgent` over same adapter) with JSON body:
+
+```json
+{ "prompt": "Explain local AI agents in one short paragraph." }
+```
+
+Both return:
+- `backend` (`meai` or `agent-framework`)
+- `model`
+- `response`
 
 ## Quick test flow
 
 1. Start AppHost (command above).
 2. In Aspire Dashboard, open the `web` endpoint.
-3. Use the chat textbox and click **Send**.
-4. The UI calls `apiservice /chat`, which executes local Foundry model inference through the adapter.
+3. Use the chat textbox and click **Send with MEAI** or **Send with Agent**.
+4. The UI calls:
+   - `/chat` for direct MEAI path
+   - `/chat-agent` for Agent Framework path
+5. In Aspire Dashboard traces, inspect the API request spans and GenAI spans emitted from MEAI OpenTelemetry instrumentation (`Microsoft.Extensions.AI` source).
