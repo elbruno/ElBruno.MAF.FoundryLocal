@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>ElBruno.MAF.FoundryLocal.Adapter</id>
+    <version>1.0.0</version>
+    <authors>El Bruno</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <readme>README.Package.md</readme>
+    <projectUrl>https://github.com/elbruno/ElBruno.MAF.FoundryLocal</projectUrl>
+    <description>Adapter package that bridges Foundry Local SDK with Microsoft.Extensions.AI IChatClient for Agent Framework usage.</description>
+    <tags>foundry-local agent-framework microsoft-extensions-ai chatclient adapter</tags>
+    <repository type="git" url="https://github.com/elbruno/ElBruno.MAF.FoundryLocal" branch="refs/heads/main" />
+    <dependencies>
+      <group targetFramework="net10.0">
+        <dependency id="Microsoft.AI.Foundry.Local" version="1.2.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.AI" version="10.6.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="10.0.8" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="10.0.8" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\bin\Release\net10.0\win-x64\ElBruno.MAF.FoundryLocal.dll" target="lib\net10.0\ElBruno.MAF.FoundryLocal.dll" />
+    <file src="C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\README.Package.md" target="\README.Package.md" />
+  </files>
+</package>

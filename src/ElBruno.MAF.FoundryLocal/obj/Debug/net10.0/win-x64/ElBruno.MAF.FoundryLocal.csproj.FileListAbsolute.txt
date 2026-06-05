@@ -1,0 +1,12 @@
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.csproj.AssemblyReference.cache
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.GeneratedMSBuildEditorConfig.editorconfig
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.AssemblyInfoInputs.cache
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.AssemblyInfo.cs
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.csproj.CoreCompileInputs.cache
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\bin\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.deps.json
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\bin\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.dll
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\bin\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.pdb
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.dll
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\refint\ElBruno.MAF.FoundryLocal.dll
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ElBruno.MAF.FoundryLocal.pdb
+C:\src\ElBruno.MAF.FoundryLocal\src\ElBruno.MAF.FoundryLocal\obj\Debug\net10.0\win-x64\ref\ElBruno.MAF.FoundryLocal.dll
