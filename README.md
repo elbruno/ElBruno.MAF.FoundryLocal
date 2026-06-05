@@ -36,55 +36,78 @@ Console Host (src/ElBruno.MAF.FoundryLocal.Console)
                -> Foundry Local SDK
 ```
 
-## Run
+## Quick start: Foundry Local as `IChatClient`
 
-```bash
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --prompt "Explain local agents in one paragraph"
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --stream --prompt "What is Foundry Local?"
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --list-models
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --download-model qwen2.5-0.5b
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --diagnostics
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --rag --prompt "How does this sample bridge Agent Framework and Foundry Local?"
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --rag --rag-top-k 3 --stream --prompt "What are the current tool calling limitations?"
-dotnet run --project src/ElBruno.MAF.FoundryLocal.Console -- --workflow --prompt "Explain how this sample works in 3 steps"
+```csharp
+using ElBruno.MAF.FoundryLocal;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.Configure<FoundryLocalOptions>(o =>
+{
+    o.ModelAlias = "qwen2.5-0.5b";
+    o.DownloadIfMissing = true;
+    o.UnloadOnExit = true;
+});
+builder.Services.Configure<ChatRuntimeOptions>(_ => { });
+builder.Services.AddSingleton<FoundryLocalModelLifecycleService>();
+builder.Services.AddSingleton<IChatClient, FoundryLocalChatClientAdapter>();
+
+using var host = builder.Build();
+var chatClient = host.Services.GetRequiredService<IChatClient>();
+
+var response = await chatClient.GetResponseAsync(
+[
+    new(ChatRole.User, "Explain local AI agents in one short paragraph.")
+]);
+
+Console.WriteLine(response.Text);
 ```
 
-## Optional Aspire demonstration layer
+## Quick start: use the same wrapper with Microsoft Agent Framework
 
-This repository also includes a minimal Aspire AppHost (`src/ElBruno.MAF.FoundryLocal.AppHost`) for observability/demo purposes.
-It runs the existing console app as an Aspire resource, but does **not** replace the core console flow.
+```csharp
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 
-```bash
-dotnet run --project src/ElBruno.MAF.FoundryLocal.AppHost
+// Reuse the IChatClient instance created in the previous snippet.
+var agent = new ChatClientAgent(
+    chatClient: chatClient,
+    instructions: "You are a concise local assistant.",
+    name: "LocalFoundryAgent",
+    description: "Foundry Local + MEAI adapter",
+    tools: null,
+    loggerFactory: null,
+    services: null);
+
+var agentResponse = await agent.RunAsync(
+    "Give me 3 bullet points about local-first AI in .NET.",
+    session: null,
+    options: null);
+
+Console.WriteLine(agentResponse);
 ```
 
-Caveats:
-- Aspire is optional in this sample; the default usage remains `ElBruno.MAF.FoundryLocal.Console`.
-- Console-first commands/flags continue to be the primary way to run scenarios.
-- The AppHost layer is intentionally lightweight and focused on orchestration/observability.
+## Minimal package install
 
-### Workflow mode sample (`--workflow`)
+```bash
+dotnet add package ElBruno.MAF.FoundryLocal.Adapter
+dotnet add package Microsoft.Agents.AI
+dotnet add package Microsoft.Extensions.Hosting
+```
 
-`--workflow` runs a lightweight 2-step local flow:
+## Scope of this README
 
-1. **Planner**: generates concise bullet-point plan from the user query.
-2. **Responder**: generates final answer using the planner output.
+This README is intentionally focused on the simplest adoption path:
 
-This stays on the same local adapter/agent path (`ChatClientAgent` -> `IChatClient` -> `FoundryLocalChatClientAdapter`).
+1. Foundry Local SDK wrapped as `IChatClient`.
+2. Reusing that same `IChatClient` to create agents with Microsoft Agent Framework.
 
-## Configuration
-
-Edit `src/ElBruno.MAF.FoundryLocal.Console/appsettings.json`:
-
-- `FoundryLocal.ModelAlias`
-- `FoundryLocal.DownloadIfMissing`
-- `FoundryLocal.UnloadOnExit`
-- `Agent.Name`
-- `Agent.Instructions`
-- `Chat.Temperature`
-- `Chat.MaxOutputTokens`
-- `Chat.Streaming`
+Advanced scenarios (console modes, Aspire demo, RAG/workflow extras) can be expanded later in `docs\`.
 
 ## Compatibility matrix (v1)
 
