@@ -123,34 +123,112 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
                 throw new InvalidOperationException($"Model alias '{modelAlias}' was not found in the Foundry Local catalog.");
             }
 
-            var modelPath = await model.GetPathAsync(cancellationToken);
-            var missingFromCache = string.IsNullOrWhiteSpace(modelPath);
+            var preparedModel = await PrepareModelOrVariantAsync(modelAlias, model, cancellationToken);
 
-            if (missingFromCache)
-            {
-                if (!_options.DownloadIfMissing)
-                {
-                    throw new InvalidOperationException(
-                        $"Model '{modelAlias}' is not available in cache and DownloadIfMissing is disabled.");
-                }
-
-                _logger.LogInformation("Downloading model {ModelAlias} ...", modelAlias);
-                await model.DownloadAsync(null, cancellationToken);
-                _downloadedThisSession = true;
-            }
-
-            var start = DateTimeOffset.UtcNow;
-            await model.LoadAsync(cancellationToken);
-            _lastModelLoadDuration = DateTimeOffset.UtcNow - start;
-
-            _model = model;
-            _chatClient = await model.GetChatClientAsync(cancellationToken);
+            _model = preparedModel;
+            _chatClient = await preparedModel.GetChatClientAsync(cancellationToken);
             _embeddingClient = null;
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    private async Task<IModel> PrepareModelOrVariantAsync(
+        string requestedAlias,
+        IModel model,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EnsureModelReadyAsync(model, requestedAlias, cancellationToken);
+            return model;
+        }
+        catch (FoundryLocalException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed preparing default model selection for alias {ModelAlias}. Trying variants.",
+                requestedAlias);
+        }
+
+        if (model.Variants is null || model.Variants.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"Model '{requestedAlias}' failed to initialize and does not expose fallback variants.");
+        }
+
+        foreach (var variant in model.Variants)
+        {
+            try
+            {
+                _logger.LogInformation(
+                    "Trying model variant {VariantAlias} for alias {ModelAlias}.",
+                    variant.Alias,
+                    requestedAlias);
+
+                await EnsureModelReadyAsync(variant, variant.Alias, cancellationToken);
+                return variant;
+            }
+            catch (FoundryLocalException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Variant {VariantAlias} failed during initialization for alias {ModelAlias}.",
+                    variant.Alias,
+                    requestedAlias);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"No usable variant was found for model alias '{requestedAlias}'.");
+    }
+
+    private async Task EnsureModelReadyAsync(
+        IModel candidate,
+        string candidateAlias,
+        CancellationToken cancellationToken)
+    {
+        bool missingFromCache;
+        try
+        {
+            var modelPath = await candidate.GetPathAsync(cancellationToken);
+            missingFromCache = string.IsNullOrWhiteSpace(modelPath);
+        }
+        catch (FoundryLocalException ex) when (IsModelMissingFromCache(ex))
+        {
+            // Foundry Local can throw instead of returning empty path when a model
+            // has not been downloaded yet. Treat this as a cache miss.
+            missingFromCache = true;
+            _logger.LogInformation(
+                "Model path lookup reported cache miss for {ModelAlias}. Continuing with download flow.",
+                candidateAlias);
+        }
+
+        if (missingFromCache)
+        {
+            if (!_options.DownloadIfMissing)
+            {
+                throw new InvalidOperationException(
+                    $"Model '{candidateAlias}' is not available in cache and DownloadIfMissing is disabled.");
+            }
+
+            _logger.LogInformation("Downloading model {ModelAlias} ...", candidateAlias);
+            await candidate.DownloadAsync(null, cancellationToken);
+            _downloadedThisSession = true;
+        }
+
+        var start = DateTimeOffset.UtcNow;
+        await candidate.LoadAsync(cancellationToken);
+        _lastModelLoadDuration = DateTimeOffset.UtcNow - start;
+    }
+
+    private static bool IsModelMissingFromCache(FoundryLocalException ex)
+    {
+        var message = ex.Message;
+        return message.Contains("not found", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("downloaded", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task EnsureManagerAsync(CancellationToken cancellationToken)
