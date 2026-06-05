@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/ElBruno.MAF.FoundryLocal.AppHost/ElBruno.MAF.FoundryLocal.AppHost.csproj" />
     <Project Path="src/ElBruno.MAF.FoundryLocal.Console/ElBruno.MAF.FoundryLocal.Console.csproj" />
     <Project Path="src/ElBruno.MAF.FoundryLocal/ElBruno.MAF.FoundryLocal.csproj" />
   </Folder>
