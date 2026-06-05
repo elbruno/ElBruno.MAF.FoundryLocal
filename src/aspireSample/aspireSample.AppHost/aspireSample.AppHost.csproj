@@ -1,7 +1,8 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.3.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.4.2">
 
   <ItemGroup>
     <ProjectReference Include="..\aspireSample.ApiService\aspireSample.ApiService.csproj" />
+    <ProjectReference Include="..\aspireSample.Web\aspireSample.Web.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

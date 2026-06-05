@@ -1,0 +1,83 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Home</PageTitle>
+
+<h1>Local Foundry Chat</h1>
+
+<p>Type a prompt and send it to the Aspire API backend (`/chat`) powered by <code>ElBruno.MAF.FoundryLocal</code>.</p>
+
+<div style="max-width: 900px;">
+    <label for="prompt">Prompt</label>
+    <textarea id="prompt" @bind="prompt" rows="5" style="width:100%;"></textarea>
+
+    <div style="margin-top:12px;">
+        <button @onclick="SendAsync" disabled="@isLoading">@(isLoading ? "Sending..." : "Send")</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <p style="color:#b00020;margin-top:12px;">@error</p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(responseText))
+    {
+        <div style="margin-top:16px;padding:12px;border:1px solid #ccc;border-radius:6px;">
+            <p><strong>Model:</strong> @model</p>
+            <p><strong>Response:</strong></p>
+            <pre style="white-space:pre-wrap;">@responseText</pre>
+        </div>
+    }
+</div>
+
+@code {
+    private string prompt = "Say hello in one short sentence.";
+    private string? model;
+    private string? responseText;
+    private string? error;
+    private bool isLoading;
+
+    private async Task SendAsync()
+    {
+        error = null;
+        responseText = null;
+        model = null;
+
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            error = "Prompt is required.";
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            var client = HttpClientFactory.CreateClient("chat-api");
+            using var response = await client.PostAsJsonAsync("/chat", new ChatRequest(prompt));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                error = $"Chat request failed: {(int)response.StatusCode} {response.ReasonPhrase}";
+                return;
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<ChatResponsePayload>();
+            model = payload?.Model ?? "(unknown)";
+            responseText = payload?.Response ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private sealed record ChatRequest(string Prompt);
+
+    private sealed record ChatResponsePayload(string Model, string Response);
+}
