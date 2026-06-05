@@ -7,6 +7,11 @@ This repository demonstrates a local-first AI agent in C# using:
 - Microsoft.Extensions.AI (`IChatClient`)
 - Foundry Local SDK (in-process, no REST server)
 
+## Repository assets and documentation rules
+
+- Documentation location rule: all docs live under `docs\`, except `README.md` and `LICENSE` at root.
+- Image generation prompts are tracked in `docs\image-prompts.md`.
+
 ## Why this sample exists
 
 Foundry Local does not currently provide a first-party MEAI provider, while Agent Framework expects an `IChatClient`-compatible provider.  
