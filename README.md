@@ -166,3 +166,21 @@ The sample solution continues to use `ProjectReference` for in-repo development.
 - First run may take longer due to model download/load.
 - If a model alias is invalid, run `--list-models` and choose an available alias.
 - If model download is disabled and cache is empty, enable `DownloadIfMissing`.
+
+## 👋 About the Author
+
+Hi! I'm **ElBruno** 🧡, a passionate developer and content creator exploring AI, .NET, and modern development practices.
+
+**Made with ❤️ by [ElBruno](https://github.com/elbruno)**
+
+If you like this project, consider following my work across platforms:
+
+- 🔗 **Blog**: [ElBruno.com](https://elbruno.com) — Deep dives on embeddings, RAG, .NET, and local AI
+- 💻 **YouTube**: [youtube.com/elbruno](https://www.youtube.com/elbruno) — Demos, tutorials, and live coding
+- 📺 **LinkedIn**: [@elbruno](https://www.linkedin.com/in/elbruno/) — Professional updates and insights
+- 𝕏 **Twitter**: [@elbruno](https://www.x.com/elbruno/) — Quick tips, releases, and tech news
+- 📻 **Podcast**: [No Tienen Nombre](https://notienenombre.com) — Spanish-language episodes on AI, development, and tech culture
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
