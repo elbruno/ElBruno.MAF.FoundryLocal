@@ -17,6 +17,12 @@ Use this package when you want to:
 - Consume it via `IChatClient` in Agent Framework or MEAI-based apps
 - Avoid running a local OpenAI-compatible REST server
 
+Version 0.3.0 targets .NET 10 and .NET 11 on Windows x64 and depends on
+Microsoft.AI.Foundry.Local 2.4.1 and Microsoft.Extensions.AI 11.0.0.
+Foundry Local has deprecated the in-process OpenAI chat and embedding clients
+used by this adapter and plans to remove them at the end of 2026. Hardware
+acceleration requires explicit execution-provider registration in Foundry Local 2.x.
+
 For packaging and migration guidance, see `docs\adapter-packaging-and-migration.md` in this repository.
 
 ## 👋 About the Author

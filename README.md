@@ -4,13 +4,13 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ElBruno.MAF.FoundryLocal.Adapter.svg?style=flat-square&logo=nuget)](https://www.nuget.org/packages/ElBruno.MAF.FoundryLocal.Adapter)
 [![Publish Status](https://github.com/elbruno/ElBruno.MAF.FoundryLocal/actions/workflows/publish.yml/badge.svg)](https://github.com/elbruno/ElBruno.MAF.FoundryLocal/actions/workflows/publish.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10%20%7C%2011-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![GitHub stars](https://img.shields.io/github/stars/elbruno/ElBruno.MAF.FoundryLocal?style=social)](https://github.com/elbruno/ElBruno.MAF.FoundryLocal)
 [![Twitter Follow](https://img.shields.io/twitter/follow/elbruno?style=social)](https://twitter.com/elbruno)
 
 This repository demonstrates a local-first AI agent in C# using:
 
-- .NET 10
+- .NET 11 samples and an adapter targeting .NET 10 and .NET 11
 - Microsoft Agent Framework
 - Microsoft.Extensions.AI (`IChatClient`)
 - Foundry Local SDK (in-process, no REST server)
@@ -152,6 +152,9 @@ The sample solution continues to use `ProjectReference` for in-repo development.
 
 ## Limitations
 
+- The adapter currently targets Windows x64. Foundry Local 2.x supports additional platforms, but this package does not yet configure them.
+- Foundry Local 2.x marks the OpenAI-compatible in-process chat and embedding clients used by this adapter as obsolete, with removal planned at the end of 2026. Migrating to `ChatSession` and `EmbeddingsSession` is still required.
+- Foundry Local 2.x requires explicit execution-provider discovery and registration for hardware acceleration. This sample does not automatically download execution providers.
 - Tool schema mapping currently supports JSON-schema object roots with common primitive/object/array shapes; complex schemas may be skipped.
 - Tool calling/function invocation behavior remains model/path dependent and intentionally conservative.
 - Some advanced chat options are logged as unsupported by the adapter.

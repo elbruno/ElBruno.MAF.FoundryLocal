@@ -1,3 +1,4 @@
+using Microsoft.AI.Foundry.Local;
 using Microsoft.Extensions.Logging;
 
 namespace ElBruno.MAF.FoundryLocal;
@@ -48,6 +49,11 @@ public sealed class FoundryLocalEmbeddingAdapter(
         {
             _logger.LogWarning(ex, "Embedding generation is unavailable for the current Foundry Local model/runtime.");
             return FoundryLocalEmbeddingResult.Unsupported(ex.Message);
+        }
+        catch (FoundryLocalException ex)
+        {
+            _logger.LogWarning(ex, "Foundry Local embedding generation failed.");
+            return FoundryLocalEmbeddingResult.Failure(ex.Message);
         }
     }
 }
