@@ -106,6 +106,50 @@ var agentResponse = await agent.RunAsync(
 Console.WriteLine(agentResponse);
 ```
 
+## Quick start: local decision models
+
+The adapter also exposes Foundry Local's typed decision API through
+`FoundryLocalDecisionAdapter`. For KEV models currently cataloged with task
+`decision`, the adapter registers the cached model in the local SDK catalog as
+`typed-decision`, which is the task required by `DecisionSession`.
+
+```csharp
+using System.Text.Json;
+using ElBruno.MAF.FoundryLocal;
+using Microsoft.AI.Foundry.Local;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.Configure<FoundryLocalOptions>(o =>
+{
+    o.DecisionModelAlias = "kev-0.8b";
+    o.ModelCacheDir = @"C:\Users\you\.foundry\cache\models";
+});
+builder.Services.Configure<ChatRuntimeOptions>(_ => { });
+builder.Services.AddSingleton<FoundryLocalModelLifecycleService>();
+builder.Services.AddSingleton<FoundryLocalDecisionAdapter>();
+
+using var host = builder.Build();
+var decisions = host.Services.GetRequiredService<FoundryLocalDecisionAdapter>();
+var result = await decisions.DecideAsync(new DecisionRequest
+{
+    State = JsonSerializer.SerializeToElement(new { weather = "heavy rain" }),
+    Questions = new Dictionary<string, DecisionQuestion>
+    {
+        ["umbrella"] = DecisionQuestion.Noul(
+            JsonSerializer.SerializeToElement("Should I take an umbrella?")),
+    },
+});
+
+Console.WriteLine(result.Answers["umbrella"].Noul);
+```
+
+`ModelCacheDir` is optional. Set it when the application should reuse a model
+downloaded by the Foundry Local CLI; otherwise, the SDK uses its configured
+default cache. `DecisionModelAlias` can select another compatible public
+decision model, and `DecideAsync(modelAlias, request)` can override it per call.
+
 ## Minimal package install
 
 ```bash
@@ -136,6 +180,7 @@ Advanced scenarios (console modes, Aspire demo, RAG/workflow extras) can be expa
 | Tool call response mapping | Partial | Function tool calls are mapped back to `FunctionCallContent` |
 | Demo tool (`get_current_time`) | Yes | Registered in console `ChatClientAgent` |
 | Embedding adapter path | Yes (best effort) | Uses `IModel.GetEmbeddingClientAsync` when available |
+| Typed decision models | Yes | Uses `DecisionSession`; KEV catalog task compatibility is handled locally |
 | Local RAG sample | Yes | In-memory corpus + embedding similarity + grounded prompt |
 | REST server usage | No | Explicitly avoided |
 

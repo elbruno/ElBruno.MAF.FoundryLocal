@@ -7,10 +7,10 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageId>ElBruno.MAF.FoundryLocal.Adapter</PackageId>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Authors>El Bruno</Authors>
-    <Description>Adapter package that bridges Foundry Local SDK with Microsoft.Extensions.AI IChatClient for Agent Framework usage.</Description>
-    <PackageTags>foundry-local;agent-framework;microsoft-extensions-ai;chatclient;adapter</PackageTags>
+    <Description>Foundry Local adapters for Microsoft.Extensions.AI IChatClient, embeddings, and typed decision models.</Description>
+    <PackageTags>foundry-local;agent-framework;microsoft-extensions-ai;chatclient;adapter;decision;kev</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>repo-icon.png</PackageIcon>
     <PackageReadmeFile>README.Package.md</PackageReadmeFile>
@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ElBruno.MAF.FoundryLocal.Tests" />
     <PackageReference Include="Microsoft.AI.Foundry.Local" Version="2.4.1" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0" />

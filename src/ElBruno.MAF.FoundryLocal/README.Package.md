@@ -8,6 +8,7 @@
 - Foundry Local lifecycle helpers (`FoundryLocalModelLifecycleService`)
 - Option/message/response mapping helpers for MEAI compatibility
 - Optional embedding helper path (`FoundryLocalEmbeddingAdapter`)
+- `FoundryLocalDecisionAdapter` for Foundry Local typed decision models
 
 ## Intended usage
 
@@ -15,10 +16,13 @@ Use this package when you want to:
 
 - Keep model execution local with Foundry Local SDK
 - Consume it via `IChatClient` in Agent Framework or MEAI-based apps
+- Call Foundry Local typed decision models, including KEV models
 - Avoid running a local OpenAI-compatible REST server
 
-Version 0.3.0 targets .NET 10 and .NET 11 on Windows x64 and depends on
+Version 0.4.0 targets .NET 10 and .NET 11 on Windows x64 and depends on
 Microsoft.AI.Foundry.Local 2.4.1 and Microsoft.Extensions.AI 11.0.0.
+KEV models currently cataloged with task `decision` are registered locally
+with the `typed-decision` task required by the SDK's `DecisionSession`.
 Foundry Local has deprecated the in-process OpenAI chat and embedding clients
 used by this adapter and plans to remove them at the end of 2026. Hardware
 acceleration requires explicit execution-provider registration in Foundry Local 2.x.
