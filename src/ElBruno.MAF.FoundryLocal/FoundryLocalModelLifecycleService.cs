@@ -86,6 +86,54 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
         }
     }
 
+    public Task<DecisionResult> DecideAsync(
+        DecisionRequest request,
+        CancellationToken cancellationToken = default)
+        => DecideAsync(_options.DecisionModelAlias, request, cancellationToken);
+
+    public async Task<DecisionResult> DecideAsync(
+        string modelAlias,
+        DecisionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(modelAlias);
+        ArgumentNullException.ThrowIfNull(request);
+
+        await _gate.WaitAsync(cancellationToken);
+        IModel? decisionModel = null;
+        var modelLoaded = false;
+        try
+        {
+            await EnsureManagerAsync(cancellationToken);
+
+            var publicCatalog = await _manager!.GetCatalogAsync(CatalogType.Public, cancellationToken);
+            var localCatalog = await _manager.GetCatalogAsync(CatalogType.Local, cancellationToken);
+            decisionModel = await FoundryLocalDecisionModelResolver.ResolveAsync(
+                publicCatalog, localCatalog, modelAlias, _options.DownloadIfMissing,
+                () => _downloadedThisSession = true, cancellationToken);
+
+            await decisionModel.LoadAsync(cancellationToken);
+            modelLoaded = true;
+
+            using var session = new DecisionSession(decisionModel);
+            return await session.DecideAsync(request, cancellationToken);
+        }
+        finally
+        {
+            try
+            {
+                if (modelLoaded)
+                {
+                    await decisionModel!.UnloadAsync(CancellationToken.None);
+                }
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+    }
+
     public void SetLastResponseDuration(TimeSpan elapsed) => _lastResponseDuration = elapsed;
 
     public FoundryLocalDiagnosticsSnapshot GetDiagnosticsSnapshot()
@@ -240,7 +288,8 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
 
         var config = new Configuration
         {
-            AppName = "ElBruno_MAF_FoundryLocal"
+            AppName = "ElBruno_MAF_FoundryLocal",
+            ModelCacheDir = _options.ModelCacheDir
         };
 
         await FoundryLocalManager.CreateAsync(
