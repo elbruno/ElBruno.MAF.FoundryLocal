@@ -22,28 +22,42 @@ public sealed class FoundryLocalEmbeddingAdapter(
             return FoundryLocalEmbeddingResult.Failure("At least one non-empty input is required.");
         }
 
-        var embeddingClient = await _modelLifecycleService.TryGetEmbeddingClientAsync(cancellationToken);
-        if (embeddingClient is null)
+        using var lease = await _modelLifecycleService.AcquireModelAsync(cancellationToken);
+        if (lease.Model.Info.Task is not "embeddings")
         {
-            return FoundryLocalEmbeddingResult.Unsupported("Embedding client is not available for the current Foundry Local runtime/model.");
+            return FoundryLocalEmbeddingResult.Unsupported("The current Foundry Local model does not support embeddings.");
         }
 
         try
         {
-            var response = await embeddingClient.GenerateEmbeddingsAsync(source, cancellationToken);
-            if (!response.Successful || response.Data is null || response.Data.Count == 0)
+            using var session = new EmbeddingsSession(lease.Model);
+            using var request = new Request();
+            foreach (var input in source)
             {
-                var errorMessage = response.Error?.Message ?? "Embedding generation returned an empty response.";
-                _logger.LogWarning("Embedding generation failed. Reason: {Reason}", errorMessage);
-                return FoundryLocalEmbeddingResult.Failure(errorMessage);
+                request.AddItem(new TextItem(input));
             }
 
-            var embeddings = response.Data
-                .OrderBy(static item => item.Index ?? int.MaxValue)
-                .Select(static item => (IReadOnlyList<float>)item.Embedding.Select(static value => (float)value).ToArray())
-                .ToArray();
+            using var response = await session.ProcessRequestAsync(request, cancellationToken);
+            if (response.FinishReason == FinishReason.Error || response.ItemCount != source.Length)
+            {
+                const string reason = "Embedding generation did not return one vector per input.";
+                _logger.LogWarning("{Reason}", reason);
+                return FoundryLocalEmbeddingResult.Failure(reason);
+            }
 
-            return new FoundryLocalEmbeddingResult(true, true, embeddings, null);
+            List<IReadOnlyList<float>> embeddings = [];
+            foreach (var item in response)
+            {
+                if (item is not TensorItem { ElementCount: > 0 } tensor)
+                {
+                    const string reason = "Embedding generation returned an invalid vector.";
+                    _logger.LogWarning("{Reason}", reason);
+                    return FoundryLocalEmbeddingResult.Failure(reason);
+                }
+
+                embeddings.Add(tensor.ToArray<float>());
+            }
+            return new FoundryLocalEmbeddingResult(true, true, embeddings.ToArray(), null);
         }
         catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException)
         {

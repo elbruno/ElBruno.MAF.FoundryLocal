@@ -166,7 +166,7 @@ public static class FoundryLocalResponseMapper
         return functionCalls;
     }
 
-    private static Dictionary<string, object?> ParseArguments(string argumentsJson)
+    internal static Dictionary<string, object?> ParseArguments(string argumentsJson)
     {
         if (string.IsNullOrWhiteSpace(argumentsJson))
         {

@@ -42,6 +42,7 @@ public static class FoundryLocalOptionMapper
             unsupported);
     }
 
+#pragma warning disable CS0618 // Keep the 0.4.0 public overload for legacy consumers.
     public static FoundryLocalOptionMappingResult Apply(OpenAIChatClient chatClient, ChatOptions? options, ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(chatClient);
@@ -61,6 +62,7 @@ public static class FoundryLocalOptionMapper
         {
             return mapping;
         }
+#pragma warning restore CS0618
 
         TrySet(settings, "Temperature", mapping.Temperature);
         TrySet(settings, "TopP", mapping.TopP);

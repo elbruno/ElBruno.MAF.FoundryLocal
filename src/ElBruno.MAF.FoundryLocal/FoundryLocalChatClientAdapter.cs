@@ -1,3 +1,4 @@
+using Microsoft.AI.Foundry.Local;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -16,18 +17,44 @@ public sealed class FoundryLocalChatClientAdapter(
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(messages);
+        var nativeOptions = FoundryLocalSessionChatMapper.MapOptions(options);
 
-        var client = await _modelLifecycleService.GetChatClientAsync(cancellationToken);
-        var optionMapping = FoundryLocalOptionMapper.Apply(client, options, _logger);
-        var mappedMessages = FoundryLocalMessageMapper.Map(messages);
+        using var lease = await _modelLifecycleService.AcquireModelAsync(cancellationToken);
+        using var session = new ChatSession(lease.Model);
+        using var request = new Request();
+        FoundryLocalSessionChatMapper.AddMessages(request, messages);
+        FoundryLocalSessionChatMapper.Configure(session, request, nativeOptions, options, _logger);
 
         var started = DateTimeOffset.UtcNow;
-        var completion = optionMapping.Tools.Count > 0
-            ? await client.CompleteChatAsync(mappedMessages, optionMapping.Tools, cancellationToken)
-            : await client.CompleteChatAsync(mappedMessages, cancellationToken);
+        using var completion = await session.ProcessRequestAsync(request, cancellationToken);
+        EnsureSucceeded(completion);
         _modelLifecycleService.SetLastResponseDuration(DateTimeOffset.UtcNow - started);
 
-        return FoundryLocalResponseMapper.Map(completion);
+        var filter = new FoundryLocalStopSequenceFilter(options?.StopSequences);
+        List<AIContent> contents = [];
+        foreach (var item in completion)
+        {
+            foreach (var content in FoundryLocalSessionChatMapper.MapItem(item))
+            {
+                if (content is TextContent text)
+                {
+                    var visible = filter.Append(text.Text);
+                    if (visible.Length > 0) contents.Add(new TextContent(visible));
+                }
+                else if (!filter.Stopped)
+                {
+                    contents.Add(content);
+                }
+            }
+        }
+
+        var tail = filter.Complete();
+        if (tail.Length > 0) contents.Add(new TextContent(tail));
+        return new ChatResponse(new ChatMessage(ChatRole.Assistant, contents))
+        {
+            Usage = FoundryLocalSessionChatMapper.MapUsage(completion.GetUsage()),
+            FinishReason = filter.Stopped ? ChatFinishReason.Stop : FoundryLocalSessionChatMapper.MapFinishReason(completion.FinishReason)
+        };
     }
 
     public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
@@ -36,22 +63,73 @@ public sealed class FoundryLocalChatClientAdapter(
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(messages);
+        var nativeOptions = FoundryLocalSessionChatMapper.MapOptions(options);
 
-        var client = await _modelLifecycleService.GetChatClientAsync(cancellationToken);
-        var optionMapping = FoundryLocalOptionMapper.Apply(client, options, _logger);
-        var mappedMessages = FoundryLocalMessageMapper.Map(messages);
+        using var lease = await _modelLifecycleService.AcquireModelAsync(cancellationToken);
+        using var session = new ChatSession(lease.Model);
+        using var request = new Request();
+        FoundryLocalSessionChatMapper.AddMessages(request, messages);
+        FoundryLocalSessionChatMapper.Configure(session, request, nativeOptions, options, _logger);
+        session.SetStreaming(true);
 
         var started = DateTimeOffset.UtcNow;
-        var streamingResponse = optionMapping.Tools.Count > 0
-            ? client.CompleteChatStreamingAsync(mappedMessages, optionMapping.Tools, cancellationToken)
-            : client.CompleteChatStreamingAsync(mappedMessages, cancellationToken);
+        await using var stream = session.ProcessStreamingRequestAsync(request, cancellationToken);
+        var filter = new FoundryLocalStopSequenceFilter(options?.StopSequences);
+        var sawText = false;
+        Dictionary<string, FunctionCallContent> calls = [];
 
-        await foreach (var update in streamingResponse)
+        await foreach (var item in stream.WithCancellation(cancellationToken))
         {
-            yield return FoundryLocalResponseMapper.MapStreamingUpdate(update);
+            List<AIContent> contents;
+            using (item)
+            {
+                contents = FoundryLocalSessionChatMapper.MapItem(item).ToList();
+            }
+
+            foreach (var content in contents)
+            {
+                if (content is TextContent text)
+                {
+                    sawText |= text.Text.Length > 0;
+                    var visible = filter.Append(text.Text);
+                    if (visible.Length > 0) yield return new ChatResponseUpdate(ChatRole.Assistant, visible);
+                }
+                else if (content is FunctionCallContent call)
+                {
+                    calls[call.CallId] = call;
+                }
+            }
         }
 
+        using var completion = await stream.FinalResponse;
+        EnsureSucceeded(completion);
+        foreach (var item in completion)
+        {
+            foreach (var content in FoundryLocalSessionChatMapper.MapItem(item))
+            {
+                if (content is TextContent text && !sawText)
+                {
+                    var visible = filter.Append(text.Text);
+                    if (visible.Length > 0) yield return new ChatResponseUpdate(ChatRole.Assistant, visible);
+                }
+                else if (content is FunctionCallContent call)
+                {
+                    calls[call.CallId] = call;
+                }
+            }
+        }
+
+        var tail = filter.Complete();
+        if (tail.Length > 0) yield return new ChatResponseUpdate(ChatRole.Assistant, tail);
         _modelLifecycleService.SetLastResponseDuration(DateTimeOffset.UtcNow - started);
+        List<AIContent> terminalContents = filter.Stopped ? [] : [.. calls.Values];
+        terminalContents.Add(new UsageContent(FoundryLocalSessionChatMapper.MapUsage(completion.GetUsage())));
+        yield return new ChatResponseUpdate
+        {
+            Role = ChatRole.Assistant,
+            Contents = terminalContents,
+            FinishReason = filter.Stopped ? ChatFinishReason.Stop : FoundryLocalSessionChatMapper.MapFinishReason(completion.FinishReason)
+        };
     }
 
     public object? GetService(Type serviceType, object? serviceKey = null)
@@ -62,5 +140,13 @@ public sealed class FoundryLocalChatClientAdapter(
 
     public void Dispose()
     {
+    }
+
+    private static void EnsureSucceeded(Response response)
+    {
+        if (response.FinishReason == FinishReason.Error)
+        {
+            throw new FoundryLocalException("The native Foundry Local chat request failed.");
+        }
     }
 }
