@@ -38,6 +38,9 @@ Console Host (src/ElBruno.MAF.FoundryLocal.Console)
 
 ## Quick start: Foundry Local as `IChatClient`
 
+See the [0.5.0 developer announcement](docs/blog-post-foundry-local-native-sessions.md)
+for native chat, streaming, and embedding examples.
+
 ```csharp
 using ElBruno.MAF.FoundryLocal;
 using Microsoft.Extensions.AI;
@@ -179,7 +182,7 @@ Advanced scenarios (console modes, Aspire demo, RAG/workflow extras) can be expa
 | Tool calling (MEAI -> Foundry Local) | Partial | `ChatOptions.Tools` are mapped for AIFunction-based tools |
 | Tool call response mapping | Partial | Function tool calls are mapped back to `FunctionCallContent` |
 | Demo tool (`get_current_time`) | Yes | Registered in console `ChatClientAgent` |
-| Embedding adapter path | Yes (best effort) | Uses `IModel.GetEmbeddingClientAsync` when available |
+| Embedding adapter path | Yes (best effort) | Uses `EmbeddingsSession` with a compatible embedding model |
 | Typed decision models | Yes | Uses `DecisionSession`; KEV catalog task compatibility is handled locally |
 | Local RAG sample | Yes | In-memory corpus + embedding similarity + grounded prompt |
 | REST server usage | No | Explicitly avoided |
@@ -198,7 +201,7 @@ The sample solution continues to use `ProjectReference` for in-repo development.
 ## Limitations
 
 - The adapter currently targets Windows x64. Foundry Local 2.x supports additional platforms, but this package does not yet configure them.
-- Foundry Local 2.x marks the OpenAI-compatible in-process chat and embedding clients used by this adapter as obsolete, with removal planned at the end of 2026. Migrating to `ChatSession` and `EmbeddingsSession` is still required.
+- Chat, streaming, and embedding inference use native Foundry Local sessions. The low-level OpenAI-compatible lifecycle accessors are retained for SDK 2.4.1 callers only; prefer the adapters for new code.
 - Foundry Local 2.x requires explicit execution-provider discovery and registration for hardware acceleration. This sample does not automatically download execution providers.
 - Tool schema mapping currently supports JSON-schema object roots with common primitive/object/array shapes; complex schemas may be skipped.
 - Tool calling/function invocation behavior remains model/path dependent and intentionally conservative.

@@ -12,11 +12,14 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
     private readonly ChatRuntimeOptions _chatOptions;
     private readonly ILogger<FoundryLocalModelLifecycleService> _logger;
     private readonly List<string> _warnings = [];
+    private readonly object _leaseLock = new();
 
     private FoundryLocalManager? _manager;
     private IModel? _model;
-    private OpenAIChatClient? _chatClient;
-    private OpenAIEmbeddingClient? _embeddingClient;
+    private readonly Dictionary<string, IModel> _loadedModels = new(StringComparer.Ordinal);
+    private TaskCompletionSource? _leasesDrained;
+    private int _activeLeases;
+    private bool _disposed;
     private string? _modelAliasOverride;
     private bool _downloadedThisSession;
     private TimeSpan? _lastModelLoadDuration;
@@ -43,7 +46,7 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
     public async Task DownloadModelAsync(string modelAlias, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modelAlias);
-        await PrepareModelCoreAsync(modelAlias, cancellationToken);
+        using var lease = await AcquireModelAsync(modelAlias, cancellationToken);
     }
 
     public void SetModelAliasOverride(string modelAlias)
@@ -52,26 +55,22 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
         _modelAliasOverride = modelAlias;
     }
 
+#pragma warning disable CS0618 // Keep the 0.4.0 public signatures while SDK 2.4.1 still provides them.
     public async Task<OpenAIChatClient> GetChatClientAsync(CancellationToken cancellationToken = default)
     {
-        await PrepareModelCoreAsync(_modelAliasOverride ?? _options.ModelAlias, cancellationToken);
-        return _chatClient!;
+        using var lease = await AcquireModelAsync(cancellationToken);
+        return await lease.Model.GetChatClientAsync(cancellationToken);
     }
 
     public async Task<OpenAIEmbeddingClient?> TryGetEmbeddingClientAsync(CancellationToken cancellationToken = default)
     {
-        await PrepareModelCoreAsync(_modelAliasOverride ?? _options.ModelAlias, cancellationToken);
-
-        if (_embeddingClient is not null)
-        {
-            return _embeddingClient;
-        }
+        using var lease = await AcquireModelAsync(cancellationToken);
 
         try
         {
-            _embeddingClient = await _model!.GetEmbeddingClientAsync(cancellationToken);
-            return _embeddingClient;
+            return await lease.Model.GetEmbeddingClientAsync(cancellationToken);
         }
+#pragma warning restore CS0618
         catch (MissingMethodException ex)
         {
             AddWarning("Embedding client is not available in the current Foundry Local SDK runtime.");
@@ -104,6 +103,7 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
         var modelLoaded = false;
         try
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             await EnsureManagerAsync(cancellationToken);
 
             var publicCatalog = await _manager!.GetCatalogAsync(CatalogType.Public, cancellationToken);
@@ -149,19 +149,49 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_model is not null && _options.UnloadOnExit)
+        await _gate.WaitAsync();
+        try
         {
-            await _model.UnloadAsync(CancellationToken.None);
-        }
+            if (_disposed)
+            {
+                return;
+            }
 
-        _gate.Dispose();
+            _disposed = true;
+            Task? pendingLeases;
+            lock (_leaseLock)
+            {
+                pendingLeases = _leasesDrained?.Task;
+            }
+
+            if (pendingLeases is not null)
+            {
+                await pendingLeases;
+            }
+
+            if (_options.UnloadOnExit)
+            {
+                foreach (var model in _loadedModels.Values)
+                {
+                    await model.UnloadAsync(CancellationToken.None);
+                }
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
-    private async Task PrepareModelCoreAsync(string modelAlias, CancellationToken cancellationToken)
+    internal Task<ModelLease> AcquireModelAsync(CancellationToken cancellationToken)
+        => AcquireModelAsync(_modelAliasOverride ?? _options.ModelAlias, cancellationToken);
+
+    private async Task<ModelLease> AcquireModelAsync(string modelAlias, CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken);
         try
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             await EnsureManagerAsync(cancellationToken);
 
             var catalog = await _manager!.GetCatalogAsync(cancellationToken);
@@ -174,13 +204,42 @@ public sealed class FoundryLocalModelLifecycleService : IAsyncDisposable
             var preparedModel = await PrepareModelOrVariantAsync(modelAlias, model, cancellationToken);
 
             _model = preparedModel;
-            _chatClient = await preparedModel.GetChatClientAsync(cancellationToken);
-            _embeddingClient = null;
+            _loadedModels[preparedModel.Id] = preparedModel;
+            lock (_leaseLock)
+            {
+                if (_activeLeases++ == 0)
+                {
+                    _leasesDrained = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+            }
+
+            return new ModelLease(preparedModel, ReleaseLease);
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    private void ReleaseLease()
+    {
+        lock (_leaseLock)
+        {
+            if (--_activeLeases == 0)
+            {
+                _leasesDrained?.SetResult();
+                _leasesDrained = null;
+            }
+        }
+    }
+
+    // Disposal waits for native sessions, without holding the preparation gate during inference.
+    internal sealed class ModelLease(IModel model, Action release) : IDisposable
+    {
+        private Action? _release = release;
+        internal IModel Model { get; } = model;
+
+        public void Dispose() => Interlocked.Exchange(ref _release, null)?.Invoke();
     }
 
     private async Task<IModel> PrepareModelOrVariantAsync(

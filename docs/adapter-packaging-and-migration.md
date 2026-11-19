@@ -10,16 +10,42 @@ Version 0.4.0 adds typed decision support while retaining the .NET 10 and
 Applications upgrading from 0.2.x may need to update direct references to
 Microsoft.Extensions packages to avoid dependency downgrades.
 
-The adapter still uses the SDK's in-process OpenAI-compatible chat and embedding
-clients, which Foundry Local 2.x marks obsolete and plans to remove at the end
-of 2026. They remain available in 2.4.1; a future adapter release must migrate
-to `ChatSession` and `EmbeddingsSession`. Foundry Local 2.x also makes execution
-provider downloads explicit. This adapter does not automatically register
-providers, so applications requiring hardware acceleration must configure them
-through the SDK.
+Foundry Local 2.x makes execution-provider downloads explicit. This adapter
+does not automatically register providers, so applications requiring hardware
+acceleration must configure them through the SDK.
 
 See the [Foundry Local SDK migration guide](https://learn.microsoft.com/azure/foundry-local/reference/reference-sdk-migration)
 and [current SDK reference](https://learn.microsoft.com/azure/foundry-local/reference/reference-sdk-current).
+
+## Native chat and embedding sessions
+
+`FoundryLocalChatClientAdapter` and `FoundryLocalEmbeddingAdapter` use
+`ChatSession` and `EmbeddingsSession` in-process. Each chat request creates a
+fresh session and supplies the full Microsoft.Extensions.AI message history.
+Streaming emits text incrementally and returns complete function calls with the
+terminal update. Native response handles are disposed by the adapters;
+`RawRepresentation` is not populated by the native adapter. Use
+`ChatResponse.Usage` or the terminal streaming update's `UsageContent` for
+token counts reported by the SDK. Native responses and their item views cannot
+outlive the adapter's disposal of the underlying handles.
+
+Temperature, top-p and output token limits map to native request options.
+Custom stop sequences truncate visible text (including across streaming chunks);
+they do not stop the native generator early. SDK 2.4.1 documents request
+cancellation rather than a successful custom stop, so the adapter lets the
+request finish and retains its final usage. Tool choice supports `Auto`,
+`None`, and `RequireAny` on compatible models. `RequireSpecific` throws
+`NotSupportedException` before model preparation. Tool calls in `Auto` mode depend on the
+selected model; ordinary text is never interpreted as a tool call. Embeddings
+require a model with the `embeddings` task, such as `qwen3-embedding-0.6b`.
+
+The public `GetChatClientAsync`, `TryGetEmbeddingClientAsync`, and
+`FoundryLocalOptionMapper.Apply` signatures remain available on SDK 2.4.1 for
+source and binary compatibility. Callers should migrate to
+`FoundryLocalChatClientAdapter` (`IChatClient`) or
+`FoundryLocalEmbeddingAdapter.TryGenerateEmbeddingsAsync` before upgrading to
+an SDK that removes those legacy types. The adapter does not promise that
+the legacy signatures will work on such an SDK.
 
 ## Typed decision models
 
@@ -89,11 +115,11 @@ This remains unchanged to keep local development fast and non-breaking.
 
 ### Consumer migration to package reference
 
-For external consumers, once version 0.4.0 is published, replace the project reference with:
+For external consumers, replace the project reference with:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="ElBruno.MAF.FoundryLocal.Adapter" Version="0.4.0" />
+  <PackageReference Include="ElBruno.MAF.FoundryLocal.Adapter" Version="0.5.0" />
 </ItemGroup>
 ```
 

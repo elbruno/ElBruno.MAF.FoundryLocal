@@ -19,13 +19,14 @@ Use this package when you want to:
 - Call Foundry Local typed decision models, including KEV models
 - Avoid running a local OpenAI-compatible REST server
 
-Version 0.4.0 targets .NET 10 and .NET 11 on Windows x64 and depends on
+Version 0.5.0 targets .NET 10 and .NET 11 on Windows x64 and depends on
 Microsoft.AI.Foundry.Local 2.4.1 and Microsoft.Extensions.AI 11.0.0.
 KEV models currently cataloged with task `decision` are registered locally
 with the `typed-decision` task required by the SDK's `DecisionSession`.
-Foundry Local has deprecated the in-process OpenAI chat and embedding clients
-used by this adapter and plans to remove them at the end of 2026. Hardware
-acceleration requires explicit execution-provider registration in Foundry Local 2.x.
+Chat and embedding adapters use `ChatSession` and `EmbeddingsSession`.
+Legacy OpenAI-compatible lifecycle accessors remain available on SDK 2.4.1
+for compatibility. Hardware acceleration requires explicit execution-provider
+registration in Foundry Local 2.x.
 
 For packaging and migration guidance, see `docs\adapter-packaging-and-migration.md` in this repository.
 

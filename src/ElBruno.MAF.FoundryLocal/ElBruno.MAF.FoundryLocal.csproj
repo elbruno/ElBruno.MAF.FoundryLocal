@@ -7,7 +7,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageId>ElBruno.MAF.FoundryLocal.Adapter</PackageId>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
+    <PackageReleaseNotes>Native Foundry Local chat, streaming, and embedding sessions; token usage reporting; and explicit rejection of unsupported named-tool selection. See the repository changelog for migration notes.</PackageReleaseNotes>
     <Authors>El Bruno</Authors>
     <Description>Foundry Local adapters for Microsoft.Extensions.AI IChatClient, embeddings, and typed decision models.</Description>
     <PackageTags>foundry-local;agent-framework;microsoft-extensions-ai;chatclient;adapter;decision;kev</PackageTags>

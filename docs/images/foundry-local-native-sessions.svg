@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">Foundry Local adapter: native inference paths</title>
+  <desc id="desc">The chat adapter sends application or agent requests to ChatSession. The embedding adapter sends text batches to EmbeddingsSession. Both sessions use local models without a REST server.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0l8 4-8 4z" fill="#9db4d5"/>
+    </marker>
+  </defs>
+  <rect width="960" height="360" rx="22" fill="#121c30"/>
+  <g font-family="system-ui, sans-serif">
+    <text x="36" y="52" font-size="29" font-weight="700" fill="#f3f7ff">Foundry Local: native sessions in .NET</text>
+    <text x="36" y="82" font-size="17" fill="#b9c9e2">Adapter 0.5.0 / Windows x64 / .NET 10 and 11</text>
+    <g fill="#20334e" stroke="#688db8">
+      <rect x="36" y="115" width="235" height="76" rx="12"/>
+      <rect x="36" y="216" width="235" height="76" rx="12"/>
+      <rect x="315" y="115" width="275" height="76" rx="12"/>
+      <rect x="315" y="216" width="275" height="76" rx="12"/>
+      <rect x="674" y="115" width="250" height="177" rx="12" fill="#173832" stroke="#6bbaaa"/>
+    </g>
+    <g stroke="#9db4d5" stroke-width="2" fill="none" marker-end="url(#arrow)">
+      <path d="M277 153h31"/><path d="M277 254h31"/>
+      <path d="M596 153h71"/><path d="M596 254h71"/>
+    </g>
+    <g font-size="18" font-weight="650" fill="#f3f7ff">
+      <text x="54" y="146">Application or agent</text><text x="54" y="247">Embedding adapter</text>
+      <text x="333" y="146">ChatSession</text><text x="333" y="247">EmbeddingsSession</text>
+      <text x="697" y="194">Foundry Local models</text>
+    </g>
+    <g font-size="15" fill="#b9c9e2">
+      <text x="54" y="171">via IChatClient</text><text x="54" y="272">text batches</text>
+      <text x="333" y="171">chat replies, streamed text, tools</text><text x="333" y="272">one vector per nonblank input</text>
+      <text x="697" y="220" fill="#bbded6">Runs in the same process</text>
+      <text x="36" y="328">No REST server required</text>
+    </g>
+  </g>
+</svg>
