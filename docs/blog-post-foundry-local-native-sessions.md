@@ -62,3 +62,5 @@ else
 The embedding adapter uses `EmbeddingsSession`; it does not initialize a chat client. Typed decision support, including the KEV compatibility path introduced in 0.4.0, is unchanged.
 
 **Upgrade notes:** Use `ChatResponse.Usage` or terminal streaming `UsageContent` for native token counts, not `RawRepresentation`, which is unset. `RequireSpecific` fails explicitly, so use `RequireAny` only if any available function is acceptable. Custom stop sequences hide the matching text across chunks, but the SDK still finishes generating. Legacy accessors remain on SDK 2.4.1 for migration; see the [migration guide](adapter-packaging-and-migration.md) for details.
+
+**Suggested tags:** Foundry Local, .NET, Microsoft Agent Framework, Local AI, On-device inference, Embeddings
