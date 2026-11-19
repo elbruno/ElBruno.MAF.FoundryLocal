@@ -1,5 +1,7 @@
 # Foundry Local 0.5.0: native sessions behind your .NET agent
 
+![A laptop's processor connects chat messages and embedding vectors to an AI agent.](images/foundry-local-native-sessions-hero.png)
+
 `ElBruno.MAF.FoundryLocal.Adapter` 0.5.0 moves local chat, streaming, and embeddings to native Foundry Local SDK sessions. If your app already uses `IChatClient`, keep your agent code. The adapter now runs inference in-process through `ChatSession` instead of the deprecated OpenAI-compatible client, without starting a REST server.
 
 ![An application or agent calls IChatClient, which routes chat and streaming to ChatSession; the embedding adapter routes text batches to EmbeddingsSession. Both use local models.](images/foundry-local-native-sessions.svg)
