@@ -6,57 +6,95 @@
 
 ![An application or agent calls IChatClient, which routes chat and streaming to ChatSession; the embedding adapter routes text batches to EmbeddingsSession. Both use local models.](images/foundry-local-native-sessions.svg)
 
-Install on Windows x64 with .NET 10 or .NET 11:
+## Run an agent with a local chat model
+
+On Windows x64, create a console app. These commands use .NET 11; use `net10.0` if you are on .NET 10.
 
 ```shell
+dotnet new console -n LocalChat -f net11.0
+cd LocalChat
 dotnet add package ElBruno.MAF.FoundryLocal.Adapter --version 0.5.0
+dotnet add package Microsoft.Agents.AI --version 1.28.0
 ```
 
-## Before and after: keep the interface, trade the plumbing
-
-Before, callers using the low-level lifecycle API called the legacy SDK client directly:
+Replace `Program.cs` with the code below and run `dotnet run -r win-x64`. `ListModelsAsync` initializes Foundry Local in the current process and queries its catalog. `DownloadModelAsync` downloads the selected model if it is not cached and loads it before the agent runs. The first run may need an internet connection to fetch model files.
 
 ```csharp
-var legacy = await lifecycle.GetChatClientAsync();
-var result = await legacy.CompleteChatAsync(FoundryLocalMessageMapper.Map(messages));
-Console.WriteLine(FoundryLocalResponseMapper.Map(result).Text);
-```
+using ElBruno.MAF.FoundryLocal;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
-Now, resolve `IChatClient` from the [README's DI setup](../README.md#quick-start-foundry-local-as-ichatclient) and let the adapter manage native session lifetime. The following snippets reuse `chatClient` from that setup.
+const string modelAlias = "qwen2.5-0.5b";
+await using var foundry = new FoundryLocalModelLifecycleService(
+    Options.Create(new FoundryLocalOptions
+    {
+        ModelAlias = modelAlias,
+        DownloadIfMissing = true,
+        UnloadOnExit = true
+    }),
+    Options.Create(new ChatRuntimeOptions()),
+    NullLogger<FoundryLocalModelLifecycleService>.Instance);
 
-```csharp
-using Microsoft.Extensions.AI;
+var availableModels = await foundry.ListModelsAsync();
+if (!availableModels.Contains(modelAlias, StringComparer.Ordinal))
+    throw new InvalidOperationException($"Chat model '{modelAlias}' is not in the catalog.");
 
-ChatMessage[] messages = [new(ChatRole.User, "Explain local inference in one sentence.")];
-var options = new ChatOptions { MaxOutputTokens = 80 };
+await foundry.DownloadModelAsync(modelAlias);
 
-var response = await chatClient.GetResponseAsync(messages, options);
-Console.WriteLine(response.Text);
-
-await foreach (var update in chatClient.GetStreamingResponseAsync(messages, options))
-    Console.Write(update.Text);
-```
-
-The same client can back a Microsoft Agent Framework agent. Add the `Microsoft.Agents.AI` package if it is not already referenced:
-
-```csharp
-var agent = new Microsoft.Agents.AI.ChatClientAgent(
+using var chatClient = new FoundryLocalChatClientAdapter(
+    foundry, NullLogger<FoundryLocalChatClientAdapter>.Instance);
+var agent = new ChatClientAgent(
     chatClient: chatClient, instructions: "Answer in one concise paragraph.");
-Console.WriteLine(await agent.RunAsync("What stays on-device in this example?"));
+var response = await agent.RunAsync("What does it mean to run an AI model on-device?");
+Console.WriteLine(response.Text);
 ```
+
+The agent still uses `IChatClient`. The adapter opens a native `ChatSession` for each call and also supports `IChatClient.GetStreamingResponseAsync`. If your app uses dependency injection, see the [README's registration example](../README.md#quick-start-foundry-local-as-ichatclient).
 
 ## Batch embeddings on-device
 
-For an embedding workload, configure `FoundryLocalOptions.ModelAlias` to `qwen3-embedding-0.6b` in that workload's app setup, and register `FoundryLocalEmbeddingAdapter` alongside the lifecycle service. Resolve `embeddingAdapter` from DI:
+Create a separate console app for the embedding model. This one only needs the adapter package.
+
+```shell
+dotnet new console -n LocalEmbeddings -f net11.0
+cd LocalEmbeddings
+dotnet add package ElBruno.MAF.FoundryLocal.Adapter --version 0.5.0
+```
+
+Replace `Program.cs` and run `dotnet run -r win-x64`. The setup is the same as for chat, but the model must support embeddings. The program sends two inputs in one batch and prints the number of dimensions in each vector.
 
 ```csharp
-var batch = await embeddingAdapter.TryGenerateEmbeddingsAsync(
-    ["Foundry Local runs models on-device.", "Embeddings are useful for search."]);
+using ElBruno.MAF.FoundryLocal;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
-if (batch.Success)
-    Console.WriteLine($"{batch.Embeddings.Count} vectors, in input order.");
-else
-    Console.Error.WriteLine(batch.FailureReason);
+const string modelAlias = "qwen3-embedding-0.6b";
+await using var foundry = new FoundryLocalModelLifecycleService(
+    Options.Create(new FoundryLocalOptions
+    {
+        ModelAlias = modelAlias,
+        DownloadIfMissing = true,
+        UnloadOnExit = true
+    }),
+    Options.Create(new ChatRuntimeOptions()),
+    NullLogger<FoundryLocalModelLifecycleService>.Instance);
+
+var availableModels = await foundry.ListModelsAsync();
+if (!availableModels.Contains(modelAlias, StringComparer.Ordinal))
+    throw new InvalidOperationException($"Embedding model '{modelAlias}' is not in the catalog.");
+
+await foundry.DownloadModelAsync(modelAlias);
+
+var embeddingAdapter = new FoundryLocalEmbeddingAdapter(
+    foundry, NullLogger<FoundryLocalEmbeddingAdapter>.Instance);
+string[] inputs = ["Foundry Local runs models on-device.", "Embeddings are useful for search."];
+var batch = await embeddingAdapter.TryGenerateEmbeddingsAsync(inputs);
+if (!batch.Success)
+    throw new InvalidOperationException(batch.FailureReason);
+
+for (var i = 0; i < inputs.Length; i++)
+    Console.WriteLine($"{inputs[i]} -> {batch.Embeddings[i].Count} dimensions");
 ```
 
 The embedding adapter uses `EmbeddingsSession`; it does not initialize a chat client. Typed decision support, including the KEV compatibility path introduced in 0.4.0, is unchanged.
